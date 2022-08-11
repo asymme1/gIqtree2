@@ -86,11 +86,14 @@ function Sidebar(
                                 + (clickable ? ' cursor-pointer' : ' text-gray-400')
                             }
                             style={styles.row}
-                            key={data.id}>
-                            <div style={styles.indent} onClick={() => {
+                            key={data.id}
+                            onClick={() => {
                                 if (clickable)
                                     onFileChosen?.(data.path);
-                            }}>
+                            }}
+                            >
+                            <div 
+                                style={{...styles.indent, height: '100%'}} >
                                 {data.name}
                             </div>
                         </div>
