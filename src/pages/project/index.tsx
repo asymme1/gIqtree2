@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { diff } from 'deep-object-diff';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -38,7 +38,8 @@ function Project({ onOpenProject } : { onOpenProject?: (path: string) => void })
     let [executing, setExecuting] = useState(false);
     let [currentFile, setCurrentFile] = useState<string | undefined>();
     let [currentContent, setCurrentContent] = useState('');
-    let [log, setLog] = useState<string[]>([]);
+    // let [logRef, setLog] = useState<string[]>([]);
+    let logRef = useRef<string[]>([])
 
     const openSetting = currentScreen === CurrentScreen.Setting;
     const copying = currentScreen === CurrentScreen.Copy;
@@ -56,20 +57,25 @@ function Project({ onOpenProject } : { onOpenProject?: (path: string) => void })
         }
     }, [path]);
 
+    const getCurrentLog = () => {
+        return logRef.current
+    }
     useEffect(() => {
         let interval = setInterval(async () => {
             let result: string[] | false = await ipcRenderer.callMain('get-stdout', path);
             if (result) {
-                setLog(result);
+                if (JSON.stringify(result) !== JSON.stringify(getCurrentLog())) {
+                    logRef.current = result;
+                }
             }
 
             let processes: { process: ChildProcess }[] | false = await ipcRenderer.callMain('get', path);
             if (processes) {
                 setExecuting(processes.some(p => p.process.exitCode === null && !p.process.signalCode));
             }
-        }, 500);
+        }, 1000);
         return () => clearInterval(interval);
-    });
+    }, []);
 
     useEffect(() => {
         if (currentFile) {
@@ -93,9 +99,9 @@ function Project({ onOpenProject } : { onOpenProject?: (path: string) => void })
     }
 
     let preparedCommand : string[][] = [], preparedCommandWithRedo : string[][] = [];
-    if (settings) {
-        preparedCommand = prepareCommand(originalSettings!, 'output', getOutputFolder(path));
-        preparedCommandWithRedo = prepareCommand(originalSettings!, 'output', getOutputFolder(path), true);
+    if (settings && originalSettings) {
+        preparedCommand = prepareCommand(originalSettings, 'output', getOutputFolder(path));
+        preparedCommandWithRedo = prepareCommand(originalSettings, 'output', getOutputFolder(path), true);
     }
 
     let main : React.ReactElement | null;
@@ -130,7 +136,7 @@ function Project({ onOpenProject } : { onOpenProject?: (path: string) => void })
         }
         default: {
             main = (
-                <MainContent content={error ? error : currentFile ? currentContent : log.join('\n\n')} />
+                <MainContent content={error ? error : currentFile ? currentContent : logRef.current.join('\n\n')} />
             );
             break;
         }
