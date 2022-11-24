@@ -1,0 +1,12 @@
+diff --git a/node_modules/chokidar/types/index.d.ts b/node_modules/chokidar/types/index.d.ts
+index aab8e33..13ca6e5 100644
+--- a/node_modules/chokidar/types/index.d.ts
++++ b/node_modules/chokidar/types/index.d.ts
+@@ -1,6 +1,6 @@
+ // TypeScript Version: 3.0
+ 
+-/// <reference types="node" />
++// / <reference types="node" />
+ 
+ import * as fs from "fs";
+ import { EventEmitter } from "events";

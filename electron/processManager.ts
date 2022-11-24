@@ -4,9 +4,10 @@ import { ipcMain } from 'electron-better-ipc';
 import merge from 'merge-stream';
 import { accessSync, chmodSync, constants, statSync } from 'fs';
 import { WriteStream } from 'tty';
-
+import { WatchDir, recurseAsync } from './filesystem';
+import { BrowserWindow } from 'electron';
 const currentProcess = new Map<string, Task[]>();
-
+const currentWatcher = new Map<string, WatchDir>();
 interface SpawnData {
     id: string;
     arguments: string[][];
@@ -130,6 +131,32 @@ ipcMain.answerRenderer('kill', async (id: string) => {
 
     let tasks = currentProcess.get(id)!;
     for (let task of tasks) task.process?.kill('SIGKILL');
+})
+
+ipcMain.answerRenderer('watch-dir', async (path: string, win: BrowserWindow) => {
+    try {
+        let watcher = new WatchDir(path);
+        
+        currentWatcher.set(path, watcher);
+        watcher.addListener(async (event : string, filename : string) => {
+            
+            let node = await recurseAsync(path)
+            await ipcMain.callRenderer(win, 'watch-dir-update', node);
+        });
+        return "";
+    } catch (e) {
+        console.log(e)
+    return "";
+
+    }
+})
+
+ipcMain.answerRenderer('watch-dir-clear', async (path: string) => {
+    try {
+        currentWatcher.get(path)?.close();
+    } catch (e) {
+        console.log(e)
+    }
 })
 
 ipcMain
